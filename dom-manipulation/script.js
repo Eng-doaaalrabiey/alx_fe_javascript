@@ -55,11 +55,8 @@ function addQuote() {
     const newQuoteObj = { text, category };
     quotes.push(newQuoteObj);
     saveQuotes();
-
-    // Update categories dropdown
     populateCategories();
 
-    // Clear inputs
     textInput.value = "";
     categoryInput.value = "";
 
@@ -68,10 +65,7 @@ function addQuote() {
 
 // ----------------- Category Filtering -----------------
 function populateCategories() {
-    // Get unique categories
     const categories = [...new Set(quotes.map(q => q.category))];
-
-    // Clear existing options except 'all'
     const selected = categoryFilter.value || "all";
     categoryFilter.innerHTML = '<option value="all">All Categories</option>';
 
@@ -82,12 +76,10 @@ function populateCategories() {
         categoryFilter.appendChild(option);
     });
 
-    // Restore last selected filter
     const lastFilter = localStorage.getItem("lastCategory") || selected;
     categoryFilter.value = lastFilter;
 }
 
-// Filter quotes based on selected category
 function filterQuotes() {
     const selectedCategory = categoryFilter.value;
     localStorage.setItem("lastCategory", selectedCategory);
@@ -148,6 +140,34 @@ function importFromJsonFile(event) {
     };
     fileReader.readAsText(event.target.files[0]);
 }
+
+// ----------------- Server Sync -----------------
+const SERVER_URL = "https://jsonplaceholder.typicode.com/posts"; // مثال API وهمي
+
+async function fetchServerQuotes() {
+    try {
+        const response = await fetch(SERVER_URL);
+        const serverData = await response.json();
+
+        const serverQuotes = serverData.slice(0, 5).map(item => ({
+            text: item.title,
+            category: "Server"
+        }));
+
+        // حل النزاع: السيرفر يأخذ الأولوية
+        quotes = serverQuotes;
+        saveQuotes();
+        populateCategories();
+        filterQuotes();
+
+        console.log("Quotes synced with server.");
+    } catch (error) {
+        console.log("Error syncing with server:", error);
+    }
+}
+
+// مزامنة كل 30 ثانية
+setInterval(fetchServerQuotes, 30000);
 
 // ----------------- Event Listeners -----------------
 newQuoteButton.addEventListener("click", showRandomQuote);
